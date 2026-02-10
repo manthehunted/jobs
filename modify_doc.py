@@ -8,22 +8,25 @@ import shlex
 import sys
 import re
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 # The regex pattern covers most common ANSI escape sequences
-ANSI_ESCAPE = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
+ANSI_ESCAPE = re.compile(r"(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]")
 
 MAKE_RESUME = "follow @tmpl/Prompt_Resume.md and make a json extension with a file name containing company name using @tmpl/ResumeContents.md and {job_description}"
 MAKE_COVER = "make a cover letter with txt extension and file name containing company name, {company}, using {resume} and {job_description}"
 
 
-def strip_ansi_codes(s):
-    return ANSI_ESCAPE.sub('', s)
+def strip_ansi_codes(s: str) -> str:
+    return ANSI_ESCAPE.sub("", s)
 
 
-def insert(name):
+def insert(name: str) -> str:
     fs = Path(name)
     assert fs.exists(), fs
 
@@ -62,9 +65,8 @@ def get_company(s: str) -> str:
     return company
 
 
-def make_cover(fs_pdf, fs_job, company):
-    prompt = MAKE_COVER.format(
-        company=company, resume=fs_pdf, job_description=fs_job)
+def make_cover(fs_pdf: str, fs_job: str, company: str) -> str:
+    prompt = MAKE_COVER.format(company=company, resume=fs_pdf, job_description=fs_job)
     cmd = 'opencode run "{prompt}"'.format(prompt=prompt)
     cmd = shlex.split(cmd)
 
@@ -76,21 +78,25 @@ def make_cover(fs_pdf, fs_job, company):
     return name
 
 
-def check_output(output, ext):
-    captured = list(filter(lambda x: b"Write" in x,
-                           output.stderr.split(b"\n")))
+def check_output(output: subprocess.CompletedProcess, ext: str) -> str:
+    captured = list(filter(lambda x: b"Write" in x, output.stderr.split(b"\n")))
     assert captured, "making resume for " + company
     captured = captured[0]
-    assert ("{}".format(ext)).encode(
-        "utf-8") in captured, f"making {ext} for " + company
-    strs = list(filter(lambda x: f"{ext}" in x, strip_ansi_codes(
-        captured.decode("utf-8")).split("Write")))
+    assert ("{}".format(ext)).encode("utf-8") in captured, (
+        f"making {ext} for " + company
+    )
+    strs = list(
+        filter(
+            lambda x: f"{ext}" in x,
+            strip_ansi_codes(captured.decode("utf-8")).split("Write"),
+        )
+    )
     current = Path(strs[0].strip())
     assert current.exists(), current
     return str(current)
 
 
-def text_to_json(fs_job_description: str):
+def text_to_json(fs_job_description: str) -> str:
     prompt = MAKE_RESUME.format(job_description=fs_job_description)
     cmd = 'opencode run "{prompt}"'.format(prompt=prompt)
     cmd = shlex.split(cmd)
@@ -102,7 +108,7 @@ def text_to_json(fs_job_description: str):
     return name
 
 
-def json_to_docx(fs_json: str):
+def json_to_docx(fs_json: str) -> str:
     name = insert(fs_json)
     logger.info("made %s" % name)
     return name
@@ -111,16 +117,20 @@ def json_to_docx(fs_json: str):
 def docx_to_pdf(fs_docx: str):
     path = fs_docx
     cmd = shlex.split(
-        f"/Applications/LibreOffice.app/Contents/MacOS/soffice --headless --convert-to pdf {path}")
-    subprocess.run(cmd,)
+        f"/Applications/LibreOffice.app/Contents/MacOS/soffice --headless --convert-to pdf {path}"
+    )
+    subprocess.run(
+        cmd,
+    )
     logger.info("made %s" % path.replace(".docx", ".pdf"))
 
 
-# txt -> json -> docx
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("name", )
+    parser.add_argument(
+        "name",
+    )
 
     args = parser.parse_args()
     name = args.name
@@ -141,4 +151,6 @@ if __name__ == "__main__":
     if names:
         names = " ".join(map(str, names))
         cmd = shlex.split(f"mv {names} ./resumes")
-        subprocess.run(cmd,)
+        subprocess.run(
+            cmd,
+        )
