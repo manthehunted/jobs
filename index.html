@@ -1,0 +1,34 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <title>String Concatenation</title>
+ </head>
+ <script>
+     function clearAllTextBoxes() {
+    // Select all input elements of type text
+    const textInputs = document.querySelectorAll('input[type="text"]');
+
+    // Iterate over the elements and set their value to an empty string
+    textInputs.forEach(input => {
+        input.value = '';
+    });
+
+    // Also clear <textarea> elements if needed
+    const textAreas = document.querySelectorAll('textarea');
+    textAreas.forEach(textarea => {
+        textarea.value = '';
+    });
+}
+ </script>
+ <body>
+     <h2>String Concatenation</h2>
+     <form action="/create" method="post">
+         <label for="company">Company:</label><br>
+         <input type="text" id="company" name="company"><br>
+         <label for="description">Description:</label><br>
+         <textarea id="description" name="description" rows="10" cols="30"></textarea><br><br>
+         <input type="submit" value="Submit">
+     </form>
+     <button onclick="clearAllTextBoxes()">Clear all text boxes</button>
+ </body>
+ </html>
