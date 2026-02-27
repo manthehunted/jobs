@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ANSI_ESCAPE = re.compile(r"(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]")
 
 MAKE_RESUME = "follow @tmpl/Prompt_Resume.md and make a json extension with a file name containing company name using @tmpl/ResumeContents.md and {job_description}"
-MAKE_COVER = "make a cover letter with txt extension and file name containing company name, {company}, using {resume} and {job_description}"
+MAKE_COVER = "make a cover letter with txt extension and file name containing company name, {company}, using {resume} and {job_description}. The content of coverletter must be coherent with respect to job description."
 
 
 def strip_ansi_codes(s: str) -> str:
@@ -66,7 +66,8 @@ def get_company(s: str) -> str:
 
 
 def make_cover(fs_pdf: str, fs_job: str, company: str) -> str:
-    prompt = MAKE_COVER.format(company=company, resume=fs_pdf, job_description=fs_job)
+    prompt = MAKE_COVER.format(
+        company=company, resume=fs_pdf, job_description=fs_job)
     cmd = 'opencode run "{prompt}"'.format(prompt=prompt)
     cmd = shlex.split(cmd)
 
@@ -79,7 +80,8 @@ def make_cover(fs_pdf: str, fs_job: str, company: str) -> str:
 
 
 def check_output(output: subprocess.CompletedProcess, ext: str) -> str:
-    captured = list(filter(lambda x: b"Write" in x, output.stderr.split(b"\n")))
+    captured = list(filter(lambda x: b"Write" in x,
+                    output.stderr.split(b"\n")))
     assert captured, "making resume for " + company
     captured = captured[0]
     assert ("{}".format(ext)).encode("utf-8") in captured, (
@@ -114,7 +116,7 @@ def json_to_docx(fs_json: str) -> str:
     return name
 
 
-def docx_to_pdf(fs_docx: str):
+def docx_to_pdf(fs_docx: str) -> str:
     path = fs_docx
     cmd = shlex.split(
         f"/Applications/LibreOffice.app/Contents/MacOS/soffice --headless --convert-to pdf {path}"
@@ -123,6 +125,7 @@ def docx_to_pdf(fs_docx: str):
         cmd,
     )
     logger.info("made %s" % path.replace(".docx", ".pdf"))
+    return path.replace(".docx", ".pdf")
 
 
 if __name__ == "__main__":
@@ -133,8 +136,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    name = args.name
+    name = args.name.strip()
     company = get_company(name)
+    logger.info(f"python arg {name}")
 
     if name.endswith("txt"):
         name = text_to_json(name)
@@ -145,7 +149,8 @@ if __name__ == "__main__":
     if name.endswith("docx"):
         name = docx_to_pdf(name)
 
-    make_cover(name, f"job_descriptions/{company}.txt", company)
+    if name.endswith("pdf"):
+        make_cover(name, f"job_descriptions/{company}.txt", company)
 
     names = list(Path(".").glob("*{name}*.*".format(name=company)))
     if names:
