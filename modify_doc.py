@@ -136,8 +136,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    name = args.name
+    name = args.name.strip()
     company = get_company(name)
+    logger.info(f"python arg {name}")
 
     if name.endswith("txt"):
         name = text_to_json(name)
@@ -148,7 +149,8 @@ if __name__ == "__main__":
     if name.endswith("docx"):
         name = docx_to_pdf(name)
 
-    make_cover(name, f"job_descriptions/{company}.txt", company)
+    if name.endswith("pdf"):
+        make_cover(name, f"job_descriptions/{company}.txt", company)
 
     names = list(Path(".").glob("*{name}*.*".format(name=company)))
     if names:
